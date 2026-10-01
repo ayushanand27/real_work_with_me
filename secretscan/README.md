@@ -1,5 +1,9 @@
-# secretscan has moved
+# This project has moved
 
-This project now lives in its own repository, with its full history:
+secretscan is now **leakkill**, in its own repository with full history:
 
-**https://github.com/ayushanand27/secretscan**
+**https://github.com/ayushanand27/leakkill**
+
+```sh
+pip install leakkill
+```
