@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossCheck</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>CrossCheck</h1>
+    <a href="options.html" target="_blank" id="settings-link">Settings</a>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tab-verify" aria-selected="true">Check text</button>
+    <button type="button" role="tab" id="tab-ask" aria-selected="false">Ask &amp; check</button>
+  </div>
+
+  <form id="form">
+    <div id="question-wrap">
+      <label for="question" id="question-label">Question it answers (optional)</label>
+      <textarea id="question" rows="2" placeholder="What was asked? This helps the checkers understand the claims."></textarea>
+    </div>
+    <div id="text-wrap">
+      <label for="text">Text to check</label>
+      <textarea id="text" rows="9" placeholder="Paste an AI answer, an essay or a reference list. Or select text on any page, right-click and choose &quot;Cross-check selected text&quot;."></textarea>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary" id="run">Check</button>
+      <button type="button" id="cancel" hidden>Cancel</button>
+    </div>
+    <p class="hint" id="setup-hint" hidden>
+      No API keys yet. Citations are still checked for free.
+      <a href="options.html" target="_blank">Add a free key</a> to check claims too.
+    </p>
+  </form>
+
+  <div id="progress" aria-live="polite"></div>
+  <div id="error" class="error" hidden></div>
+
+  <section id="results" hidden>
+    <div class="summary" id="summary"></div>
+    <div id="notices"></div>
+
+    <section id="answer-section" hidden>
+      <h2>Answer</h2>
+      <div class="answer" id="answer"></div>
+      <div class="meta" id="answer-meta"></div>
+    </section>
+
+    <section id="claims-section" hidden>
+      <h2>Claims</h2>
+      <p class="hint">Each claim was judged by every checker model on its own. Agreement is a good sign, not proof: check anything important in a primary source.</p>
+      <ol class="items" id="claims"></ol>
+    </section>
+
+    <section id="citations-section" hidden>
+      <h2>Citations</h2>
+      <p class="hint">Looked up in CrossRef, OpenAlex, arXiv and doi.org. No AI is used for this part.</p>
+      <ul class="items" id="citations"></ul>
+    </section>
+
+    <section id="checkers-section" hidden>
+      <h2>Models used</h2>
+      <ul class="items" id="checkers"></ul>
+    </section>
+  </section>
+</main>
+<script type="module" src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "crosscheck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension that checks AI answers claim by claim across several models, and verifies citations against real databases. Bring your own API keys.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "build:vendor": "esbuild scripts/anthropic-entry.js --bundle --format=esm --platform=browser --target=chrome120 --minify --legal-comments=eof --outfile=extension/vendor/anthropic-sdk.js",
+    "test:e2e": "node tests/e2e/extension.e2e.mjs"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.56.1"
+  }
+}

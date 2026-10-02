@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossCheck Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>CrossCheck settings</h1>
+    <span class="status" id="saved" aria-live="polite"></span>
+  </header>
+
+  <p class="hint">
+    Your keys are stored only in this browser (not synced) and are sent only to the company that issued them.
+    Calls are billed to your own account, so you control the cost. Groq and Gemini have free tiers that need no card.
+  </p>
+
+  <section class="card">
+    <h2>API keys</h2>
+    <p class="hint">Add at least one. For a real cross-check, add keys from two or three different companies.</p>
+    <div id="keys"></div>
+  </section>
+
+  <section class="card">
+    <h2>Models</h2>
+    <label>Main model</label>
+    <p class="hint">Finds the claims in a text, and answers your question in "Ask &amp; check". If its key is missing, the first working checker is used instead.</p>
+    <div class="model-row" id="main-row"></div>
+
+    <label>Checker models</label>
+    <p class="hint">Each one judges every claim independently. Use models from different companies than the AI that wrote the text. Click "Test" next to a key to load its model list.</p>
+    <div id="checker-rows"></div>
+  </section>
+
+  <section class="card">
+    <h2>Citations</h2>
+    <label for="mailto">Contact email (optional)</label>
+    <input type="email" id="mailto" placeholder="you@example.com" autocomplete="email">
+    <p class="hint">CrossRef and OpenAlex give faster, more reliable service when a request includes a contact email. It is sent only to them.</p>
+
+    <label class="row"><input type="checkbox" id="check-links"> Check that links in the text actually work</label>
+    <p class="hint">Needs permission to contact any website, which Chrome will ask you for. Only the links you check are requested.</p>
+    <div class="status" id="links-status"></div>
+  </section>
+
+  <datalist id="models-anthropic">
+    <option value="claude-opus-5-5">Claude Opus 5.5: most accurate</option>
+    <option value="claude-sonnet-5-5">Claude Sonnet 5.5: cheaper</option>
+    <option value="claude-haiku-4-5">Claude Haiku 4.5: cheapest</option>
+  </datalist>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>
