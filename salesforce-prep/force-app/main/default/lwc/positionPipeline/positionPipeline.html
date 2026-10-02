@@ -1,0 +1,51 @@
+<template>
+    <lightning-card title="Hiring Pipeline" icon-name="standard:opportunity">
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+        </template>
+
+        <template lwc:if={error}>
+            <p class="error slds-p-horizontal_medium slds-text-color_error">{errorMessage}</p>
+        </template>
+        <template lwc:elseif={hasApplications}>
+            <div class="slds-grid slds-wrap slds-gutters_x-small slds-p-horizontal_small">
+                <template for:each={stages} for:item="stage">
+                    <div key={stage.name} class="stage slds-col slds-size_1-of-1 slds-medium-size_1-of-5">
+                        <h3 class="slds-text-title_caps slds-m-bottom_x-small">
+                            {stage.name} ({stage.count})
+                        </h3>
+                        <template for:each={stage.applications} for:item="app">
+                            <article key={app.id} class="card slds-box slds-box_x-small slds-m-bottom_x-small">
+                                <p class="slds-text-heading_small">{app.candidateName}</p>
+                                <p class="slds-text-body_small slds-m-bottom_x-small">{app.ratingLabel}</p>
+                                <template lwc:if={app.canMove}>
+                                    <lightning-button-group>
+                                        <lightning-button
+                                            class="advance"
+                                            label={app.nextLabel}
+                                            data-id={app.id}
+                                            data-status={app.nextStatus}
+                                            onclick={handleMove}
+                                        ></lightning-button>
+                                        <lightning-button
+                                            class="reject"
+                                            label="Reject"
+                                            variant="destructive-text"
+                                            data-id={app.id}
+                                            data-status="Rejected"
+                                            onclick={handleMove}
+                                        ></lightning-button>
+                                    </lightning-button-group>
+                                </template>
+                            </article>
+                        </template>
+                    </div>
+                </template>
+            </div>
+            <p class="rejected slds-p-horizontal_medium slds-text-body_small">Rejected: {rejectedCount}</p>
+        </template>
+        <template lwc:else>
+            <p class="empty slds-p-horizontal_medium">No applications for this position yet.</p>
+        </template>
+    </lightning-card>
+</template>
