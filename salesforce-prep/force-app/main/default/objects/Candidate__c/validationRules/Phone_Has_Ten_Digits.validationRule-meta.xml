@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Phone_Has_Ten_Digits</fullName>
+    <active>true</active>
+    <description>Indian mobile numbers have 10 digits (optional +91 prefix).</description>
+    <errorConditionFormula>AND(NOT(ISBLANK(Phone__c)), NOT(REGEX(Phone__c, '(\\+91[- ]?)?[0-9]{10}')))</errorConditionFormula>
+    <errorDisplayField>Phone__c</errorDisplayField>
+    <errorMessage>Enter a 10 digit phone number, optionally starting with +91.</errorMessage>
+</ValidationRule>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Experience_Not_Negative</fullName>
+    <active>true</active>
+    <description>Years of experience cannot be negative.</description>
+    <errorConditionFormula>Years_of_Experience__c &lt; 0</errorConditionFormula>
+    <errorDisplayField>Years_of_Experience__c</errorDisplayField>
+    <errorMessage>Years of Experience cannot be negative.</errorMessage>
+</ValidationRule>

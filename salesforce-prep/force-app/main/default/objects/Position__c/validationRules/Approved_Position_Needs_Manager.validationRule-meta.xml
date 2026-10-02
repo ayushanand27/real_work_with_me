@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Approved_Position_Needs_Manager</fullName>
+    <active>true</active>
+    <description>An approved position must have a hiring manager.</description>
+    <errorConditionFormula>AND(ISPICKVAL(Status__c, 'Open - Approved'), ISBLANK(Hiring_Manager__c))</errorConditionFormula>
+    <errorDisplayField>Hiring_Manager__c</errorDisplayField>
+    <errorMessage>Choose a Hiring Manager before approving the position.</errorMessage>
+</ValidationRule>
