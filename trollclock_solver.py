@@ -88,9 +88,9 @@ def try_api_endpoints():
                     for key in ['code', 'otp', 'token', 'value']:
                         if key in data:
                             return str(data[key]), ep
-                except:
+                except (ValueError, KeyError):
                     pass
-        except:
+        except (requests.RequestException, OSError):
             pass
 
     return None, None
@@ -134,7 +134,7 @@ def verify_code(code, extra_info=None):
                         return flag_match.group(0)
                     return r.text
 
-        except Exception as e:
+        except requests.RequestException:
             pass
 
     return None
@@ -223,7 +223,7 @@ def timing_attack_on_error_messages():
             if m:
                 print(f"[!!!] Potential code in error response: {m.group(1)}")
                 return m.group(1)
-        except Exception as e:
+        except requests.RequestException as e:
             print(f"  Error: {e}")
 
     return None
