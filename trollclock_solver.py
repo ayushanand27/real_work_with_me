@@ -25,7 +25,6 @@ import re
 import threading
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse
 
 BASE_URL = "http://kicyber-00c797b2c34e-trollclock-0-0.chals.io"
 
@@ -53,25 +52,7 @@ def get_page_and_extract_code():
             print(f"[+] Found code in HTML: {m.group(1)}")
             return m.group(1), resp.cookies
 
-    print("[*] Code not found directly in HTML. Checking for JS files...")
-
-    # Extract relative JS paths and fetch them anchored to BASE_URL only
-    js_srcs = re.findall(r'src=["\']([^"\']*\.js[^"\']*)["\']', resp.text)
-    for js_src in js_srcs:
-        parsed_src = urlparse(js_src)
-        # Skip absolute URLs pointing to other hosts; use only the path component
-        if parsed_src.scheme and parsed_src.netloc:
-            continue
-        safe_path = parsed_src.path.lstrip('/')
-        js_url = BASE_URL.rstrip('/') + '/' + safe_path
-        print(f"[*] Checking JS: {js_url}")
-        js_resp = session.get(js_url, timeout=10)
-        for p in patterns:
-            m = re.search(p, js_resp.text, re.IGNORECASE)
-            if m:
-                print(f"[+] Found code in JS: {m.group(1)}")
-                return m.group(1), resp.cookies
-
+    print("[*] Code not found in HTML.")
     return None, resp.cookies
 
 
