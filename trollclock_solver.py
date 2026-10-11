@@ -164,8 +164,8 @@ def predict_code_from_timestamp():
     candidates = [
         t % 1000000,                          # unix timestamp mod 1M
         (t // 10) % 1000000,                  # changes every 10s
-        int(hashlib.md5(str(t // 10).encode()).hexdigest()[:6], 16) % 1000000,
-        int(hashlib.sha1(str(t // 10).encode()).hexdigest()[:6], 16) % 1000000,
+        int(hashlib.sha256(str(t // 10).encode()).hexdigest()[:6], 16) % 1000000,
+        int(hashlib.sha256(str(t // 37).encode()).hexdigest()[:6], 16) % 1000000,
         (t // 37) % 1000000,                  # changes every 37s (challenge window)
     ]
 
