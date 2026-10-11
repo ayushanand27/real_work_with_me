@@ -55,14 +55,15 @@ def get_page_and_extract_code():
 
     print("[*] Code not found directly in HTML. Checking for JS files...")
 
-    # Extract JS file URLs — only fetch from the same host to prevent SSRF
-    base_host = urlparse(BASE_URL).netloc
-    js_files = re.findall(r'src=["\']([^"\']*\.js[^"\']*)["\']', resp.text)
-    for js_url in js_files:
-        if not js_url.startswith('http'):
-            js_url = BASE_URL + '/' + js_url.lstrip('/')
-        if urlparse(js_url).netloc != base_host:
+    # Extract relative JS paths and fetch them anchored to BASE_URL only
+    js_srcs = re.findall(r'src=["\']([^"\']*\.js[^"\']*)["\']', resp.text)
+    for js_src in js_srcs:
+        parsed_src = urlparse(js_src)
+        # Skip absolute URLs pointing to other hosts; use only the path component
+        if parsed_src.scheme and parsed_src.netloc:
             continue
+        safe_path = parsed_src.path.lstrip('/')
+        js_url = BASE_URL.rstrip('/') + '/' + safe_path
         print(f"[*] Checking JS: {js_url}")
         js_resp = session.get(js_url, timeout=10)
         for p in patterns:
