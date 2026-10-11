@@ -1,0 +1,6 @@
+# flags.txt — one entry per line: challenge_id:flag
+# Lines starting with # are ignored.
+#
+# Example:
+# 1:CTF{example_flag_here}
+# 42:KPMG{some_other_flag}
