@@ -33,7 +33,9 @@ rows = []
 for m, g in df.groupby("model"):
     pv = g.pivot_table(index=["dataset", "id"], columns="style", values="correct", aggfunc="first")
     for s in ORDER[1:]:
-        b = int(((pv["zero_shot"] == True) & (pv[s] == False)).sum()); c = int(((pv["zero_shot"] == False) & (pv[s] == True)).sum())
+        if s not in pv or "zero_shot" not in pv: continue
+        pair = pv[["zero_shot", s]].dropna().astype(bool)
+        b = int((pair["zero_shot"] & ~pair[s]).sum()); c = int((~pair["zero_shot"] & pair[s]).sum())
         p = binomtest(b, b + c, 0.5).pvalue if b + c else 1.0
         rows.append({"model": m, "comparison": f"{LABEL[s]} vs Zero-shot", "zs_only_correct": b, "other_only_correct": c, "p_value": p})
 pd.DataFrame(rows).to_csv("results/mcnemar.csv", index=False)
@@ -50,12 +52,14 @@ for m in models:
         ax.bar(np.arange(len(dsets)) + (i - 1.5) * w, y, w, yerr=e, capsize=2, label=LABEL[s], color=colors[i])
     ax.set_xticks(range(len(dsets))); ax.set_xticklabels([DLAB[d] for d in dsets]); ax.set_ylabel("Accuracy (%)"); ax.set_ylim(0, 105)
     ax.set_title(f"Accuracy by prompting strategy: {m}"); ax.legend(fontsize=7, ncol=4, loc="lower center"); fig.tight_layout()
-    fig.savefig(f"results/acc_{m}.png", dpi=200); plt.close(fig)
+    fig.savefig("results/acc_" + m.replace("/", "_") + ".png", dpi=200); plt.close(fig)
 fig, ax = plt.subplots(figsize=(6, 3.8))
 for m, mk in zip(models, ["o", "s", "^", "D"]):
-    o = ov[ov.model == m].set_index("style").loc[ORDER]
+    o = ov[ov.model == m].set_index("style").reindex(ORDER)
     ax.scatter(o.tokens, o.acc, marker=mk, s=60, label=m)
-    for s in ORDER: ax.annotate(LABEL[s], (o.loc[s, "tokens"], o.loc[s, "acc"]), fontsize=6, xytext=(3, 3), textcoords="offset points")
+    for s in ORDER:
+        if o.loc[s].isna().any(): continue
+        ax.annotate(LABEL[s], (o.loc[s, "tokens"], o.loc[s, "acc"]), fontsize=6, xytext=(3, 3), textcoords="offset points")
 ax.set_xlabel("Mean completion tokens per answer"); ax.set_ylabel("Overall accuracy (%)"); ax.set_xscale("symlog", linthresh=10); ax.legend(fontsize=7)
 ax.set_title("Accuracy vs. output cost"); fig.tight_layout(); fig.savefig("results/cost_tradeoff.png", dpi=200)
 pd.set_option("display.width", 200)
