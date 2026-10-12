@@ -1,0 +1,7 @@
+model,comparison,zs_only_correct,other_only_correct,p_value
+allam-2-7b,Zero-shot CoT vs Zero-shot,20,40,0.01348929373119186
+allam-2-7b,Few-shot vs Zero-shot,11,15,0.557197093963623
+allam-2-7b,Few-shot CoT vs Zero-shot,13,51,1.8809621564294015e-06
+qwen/qwen3.8-27b,Zero-shot CoT vs Zero-shot,4,30,6.16488978266716e-06
+qwen/qwen3.8-27b,Few-shot vs Zero-shot,2,12,0.012939453125
+qwen/qwen3.8-27b,Few-shot CoT vs Zero-shot,2,30,2.4633482098579407e-07

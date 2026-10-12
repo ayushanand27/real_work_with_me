@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+project/results/*.log
+project/results/raw.jsonl
