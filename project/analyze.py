@@ -1,13 +1,13 @@
 """Aggregate results/raw.jsonl into tables, significance tests and charts."""
-import json, sys, math, itertools
+import json, math
 import pandas as pd, numpy as np
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.stats import binomtest
 
-RAW = sys.argv[1] if len(sys.argv) > 1 else "results/raw.jsonl"
+RAW = "results/raw.jsonl"
 df = pd.DataFrame([json.loads(l) for l in open(RAW)])
-df = df[df.temperature == 0.0]
+df = df[np.isclose(df.temperature, 0.0)]
 ORDER = ["zero_shot", "zero_shot_cot", "few_shot", "few_shot_cot"]
 LABEL = {"zero_shot": "Zero-shot", "zero_shot_cot": "Zero-shot CoT", "few_shot": "Few-shot", "few_shot_cot": "Few-shot CoT"}
 DLAB = {"gsm8k": "GSM8K", "strategyqa": "StrategyQA", "date": "Date Understanding"}

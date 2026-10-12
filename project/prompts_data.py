@@ -1,5 +1,5 @@
 """Dataset loading, sampling, and prompt construction for the prompting study."""
-import json, random, re, string
+import hashlib, json, re, string
 
 SEED = 42
 LETTERS = string.ascii_uppercase
@@ -18,34 +18,40 @@ DATE_SHOTS = [  # hand-written exemplars (kept out of the test sample)
      "The deadline is 06/01/2021 and is 2 days away, so today is 05/30/2021. 24 hours later is 05/31/2021."),
 ]
 
+def _order(n, tag):
+    """Deterministic pseudo-shuffle of range(n): sort indices by a salted SHA-256 hash."""
+    return sorted(range(n), key=lambda i: hashlib.sha256(f"{SEED}|{tag}|{i}".encode()).hexdigest())
+
 def _gsm_gold(ans): return ans.split("####")[-1].strip().replace(",", "")
 
 def load(dataset, n):
-    rng = random.Random(SEED)
     if dataset == "gsm8k":
         test = [json.loads(l) for l in open("data/gsm8k_test.jsonl")]
         train = [json.loads(l) for l in open("data/gsm8k_train.jsonl")]
-        idx = rng.sample(range(len(test)), n)
+        idx = _order(len(test), 'gsm8k-test')[:n]
         items = [{"id": f"gsm8k-{i}", "question": test[i]["question"], "gold": _gsm_gold(test[i]["answer"])} for i in idx]
         shots = []
-        for j in random.Random(SEED).sample(range(len(train)), K):
+        for j in _order(len(train), 'gsm8k-train')[:K]:
             sol = re.sub(r"<<.*?>>", "", train[j]["answer"].split("####")[0]).strip()
             shots.append((train[j]["question"], _gsm_gold(train[j]["answer"]), sol))
         return items, shots
     if dataset == "strategyqa":
         ex = json.load(open("data/strategyqa.json"))["examples"]
-        idx = list(range(len(ex))); rng.shuffle(idx)
-        pick, shot_idx = idx[:n], idx[n:n + K]
+        idx = _order(len(ex), 'strategyqa')
+        pick, shot_idx = idx[:n], idx[-K:]  # exemplars come from the tail, independent of n
         def gold(e): return max(e["target_scores"], key=e["target_scores"].get)
         items = [{"id": f"strategyqa-{i}", "question": ex[i]["input"], "gold": gold(ex[i])} for i in pick]
         shots = [(ex[i]["input"], gold(ex[i]), ex[i]["target"].strip()) for i in shot_idx]
         return items, shots
     if dataset == "date":
         ex = json.load(open("data/date_understanding.json"))["examples"]
-        idx = list(range(len(ex))); rng.shuffle(idx)
+        stems = {q.split("\nOptions:")[0] for q, _, _ in DATE_SHOTS}
+        ex = [e for e in ex if e["input"] not in stems]  # keep exemplars out of the test pool
+        idx = _order(len(ex), 'date')
         items = []
         for i in idx[:n]:
-            opts = list(ex[i]["target_scores"].items()); rng.shuffle(opts)
+            opts = list(ex[i]["target_scores"].items())
+            opts = [opts[k] for k in _order(len(opts), f'date-opts-{i}')]
             q = ex[i]["input"] + "\nOptions:\n" + "\n".join(f"{LETTERS[k]}. {o}" for k, (o, _) in enumerate(opts))
             items.append({"id": f"date-{i}", "question": q, "gold": LETTERS[[s for _, s in opts].index(1)]})
         return items, DATE_SHOTS
