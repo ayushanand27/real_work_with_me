@@ -65,7 +65,7 @@ def _shade(cell, hexcolor):
     tcPr = cell._element.get_or_add_tcPr(); sh = OxmlElement("w:shd")
     sh.set(qn("w:val"), "clear"); sh.set(qn("w:color"), "auto"); sh.set(qn("w:fill"), hexcolor); tcPr.append(sh)
 
-def table(d, header, rows, caption, widths=None, size=10):
+def table(d, header, rows, caption, widths=None, size=10, left=False):
     cp = d.add_paragraph(); cp.alignment = WD_ALIGN_PARAGRAPH.CENTER; cp.paragraph_format.keep_with_next = True
     cp.paragraph_format.line_spacing = 1.0; cp.paragraph_format.space_before = Pt(6)
     _font(cp.add_run(caption), 11, True)
@@ -78,7 +78,7 @@ def table(d, header, rows, caption, widths=None, size=10):
         cells = t.add_row().cells
         for j, v in enumerate(row):
             cells[j].text = ""; p = cells[j].paragraphs[0]; p.paragraph_format.line_spacing = 1.0
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT if j == 0 or len(str(v)) > 14 else WD_ALIGN_PARAGRAPH.CENTER
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT if left or j == 0 or len(str(v)) > 14 else WD_ALIGN_PARAGRAPH.CENTER
             _font(p.add_run(str(v)), size)
     if widths:
         for row in t.rows:
@@ -87,10 +87,12 @@ def table(d, header, rows, caption, widths=None, size=10):
     return t
 
 def figure(d, path, caption, width=5.6):
-    p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.keep_with_next = True
-    p.paragraph_format.line_spacing = 1.0; p.add_run().add_picture(path, width=Inches(width))
-    c = d.add_paragraph(); c.alignment = WD_ALIGN_PARAGRAPH.CENTER; c.paragraph_format.line_spacing = 1.0
-    c.paragraph_format.space_after = Pt(6); _font(c.add_run(caption), 11, True)
+    """Picture and caption share one paragraph (line break between) so they can never be split across pages."""
+    p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.line_spacing = 1.0; p.paragraph_format.space_after = Pt(6)
+    p.add_run().add_picture(path, width=Inches(width))
+    r = p.add_run(); r.add_break(); _font(r, 11)
+    _font(p.add_run(caption), 11, True)
 
 def page_numbers(d):
     for s in d.sections:

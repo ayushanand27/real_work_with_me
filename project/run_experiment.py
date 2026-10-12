@@ -9,6 +9,17 @@ import prompts_data as P
 URL = "https://api.groq.com/openai/v1/chat/completions"
 OUT = "results/raw.jsonl"
 lock = threading.Lock()
+pace = threading.Lock()
+recent = []  # (time, completion_tokens) of finished calls, used to respect an output-tokens-per-minute cap
+
+def wait_for_budget(otpm, expected=450):
+    """Sleep until adding `expected` output tokens keeps the last 60 s under the OTPM cap."""
+    while otpm:
+        now = time.time()
+        recent[:] = [(t, n) for t, n in recent if now - t < 60]
+        used = sum(n for _, n in recent)
+        if used + expected <= otpm: return
+        time.sleep(max(0.5, 60 - (now - recent[0][0]) + 0.2))
 
 def call(model, system, user, temperature, max_tokens, key):
     body = {"model": model, "temperature": temperature, "max_tokens": max_tokens,
@@ -35,6 +46,7 @@ def main():
     ap.add_argument("--runs", type=int, default=1, help="repeats per item (use >1 with --temperature>0 for consistency)")
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--otpm", type=int, default=0, help="output-token-per-minute cap to pace against (0 = off)")
     a = ap.parse_args()
     key = os.environ["GROQ_API_KEY"]
     os.makedirs("results", exist_ok=True)
@@ -58,7 +70,10 @@ def main():
         sysm, user = P.build(d, s, it["question"], shots)
         mx = 1000 if s.endswith("cot") else 40
         try:
-            text, ct, pt, lat = call(m, sysm, user, a.temperature, mx, key)
+            with pace:  # serialise paced calls so the token window is accurate
+                wait_for_budget(a.otpm if s.endswith("cot") else 0)
+                text, ct, pt, lat = call(m, sysm, user, a.temperature, mx, key)
+                recent.append((time.time(), ct))
         except Exception as e:
             print("ERR", m, d, s, it["id"], e, file=sys.stderr, flush=True); return
         pred = P.extract(d, text)

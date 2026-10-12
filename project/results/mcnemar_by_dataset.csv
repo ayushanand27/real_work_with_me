@@ -1,0 +1,26 @@
+model,dataset,cmp,zs_only,other_only,p
+allam-2-7b,date,zero_shot_cot,11,7,0.4807
+allam-2-7b,date,few_shot,3,8,0.2266
+allam-2-7b,date,few_shot_cot,6,18,0.0227
+allam-2-7b,date,few_shot_cot vs zero_shot_cot,4,20,0.0015
+allam-2-7b,date,few_shot_cot vs few_shot,8,15,0.21
+allam-2-7b,gsm8k,zero_shot_cot,3,24,0.0
+allam-2-7b,gsm8k,few_shot,4,5,1.0
+allam-2-7b,gsm8k,few_shot_cot,2,29,0.0
+allam-2-7b,gsm8k,few_shot_cot vs zero_shot_cot,4,10,0.1796
+allam-2-7b,gsm8k,few_shot_cot vs few_shot,4,30,0.0
+allam-2-7b,strategyqa,zero_shot_cot,6,9,0.6072
+allam-2-7b,strategyqa,few_shot,4,2,0.6875
+allam-2-7b,strategyqa,few_shot_cot,5,4,1.0
+allam-2-7b,strategyqa,few_shot_cot vs zero_shot_cot,11,7,0.4807
+allam-2-7b,strategyqa,few_shot_cot vs few_shot,5,6,1.0
+qwen/qwen3.8-27b,gsm8k,zero_shot_cot,0,24,0.0
+qwen/qwen3.8-27b,gsm8k,few_shot,2,7,0.1797
+qwen/qwen3.8-27b,gsm8k,few_shot_cot,0,25,0.0
+qwen/qwen3.8-27b,gsm8k,few_shot_cot vs zero_shot_cot,0,1,1.0
+qwen/qwen3.8-27b,gsm8k,few_shot_cot vs few_shot,1,21,0.0
+qwen/qwen3.8-27b,strategyqa,zero_shot_cot,4,6,0.7539
+qwen/qwen3.8-27b,strategyqa,few_shot,0,5,0.0625
+qwen/qwen3.8-27b,strategyqa,few_shot_cot,2,5,0.4531
+qwen/qwen3.8-27b,strategyqa,few_shot_cot vs zero_shot_cot,2,3,1.0
+qwen/qwen3.8-27b,strategyqa,few_shot_cot vs few_shot,3,1,0.625

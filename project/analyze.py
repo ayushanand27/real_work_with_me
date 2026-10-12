@@ -8,6 +8,9 @@ from scipy.stats import binomtest
 RAW = "results/raw.jsonl"
 df = pd.DataFrame([json.loads(l) for l in open(RAW)])
 df = df[np.isclose(df.temperature, 0.0)]
+# Compare strategies only on questions answered under all four strategies (per model and dataset)
+_n_styles = df.groupby(["model", "dataset", "id"])["style"].transform("nunique")
+df = df[_n_styles == df["style"].nunique()].copy()
 ORDER = ["zero_shot", "zero_shot_cot", "few_shot", "few_shot_cot"]
 LABEL = {"zero_shot": "Zero-shot", "zero_shot_cot": "Zero-shot CoT", "few_shot": "Few-shot", "few_shot_cot": "Few-shot CoT"}
 DLAB = {"gsm8k": "GSM8K", "strategyqa": "StrategyQA", "date": "Date Understanding"}
@@ -40,18 +43,30 @@ for m, g in df.groupby("model"):
         rows.append({"model": m, "comparison": f"{LABEL[s]} vs Zero-shot", "zs_only_correct": b, "other_only_correct": c, "p_value": p})
 pd.DataFrame(rows).to_csv("results/mcnemar.csv", index=False)
 
+# Per-dataset exact McNemar tests (strategy vs zero-shot, plus few-shot CoT vs its two single-factor variants)
+rows = []
+for (m, ds), g in df.groupby(["model", "dataset"]):
+    pv = g.pivot_table(index="id", columns="style", values="correct", aggfunc="first").astype(bool)
+    pairs = [("zero_shot", s, s) for s in ORDER[1:]] + [("zero_shot_cot", "few_shot_cot", "few_shot_cot vs zero_shot_cot"), ("few_shot", "few_shot_cot", "few_shot_cot vs few_shot")]
+    for base, other, name in pairs:
+        b = int((pv[base] & ~pv[other]).sum()); c = int((~pv[base] & pv[other]).sum())
+        rows.append({"model": m, "dataset": ds, "cmp": name, "zs_only": b, "other_only": c,
+                     "p": round(binomtest(b, b + c, 0.5).pvalue, 4) if b + c else 1.0})
+pd.DataFrame(rows).to_csv("results/mcnemar_by_dataset.csv", index=False)
+
 # charts
 models = sorted(df.model.unique()); dsets = [d for d in ["gsm8k", "strategyqa", "date"] if d in df.dataset.unique()]
 colors = ["#4C72B0", "#55A868", "#C44E52", "#8172B2"]
 for m in models:
-    fig, ax = plt.subplots(figsize=(7, 3.8)); w = 0.2
+    dsets_m = [d for d in dsets if d in set(acc[acc.model == m].dataset)]
+    fig, ax = plt.subplots(figsize=(7, 4.0)); w = 0.2
     for i, s in enumerate(ORDER):
-        v = [acc[(acc.model == m) & (acc.dataset == d) & (acc["style"] == s)] for d in dsets]
+        v = [acc[(acc.model == m) & (acc.dataset == d) & (acc["style"] == s)] for d in dsets_m]
         y = [x.acc.iloc[0] if len(x) else 0 for x in v]
         e = [[(x.acc.iloc[0] - x.lo.iloc[0]) if len(x) else 0 for x in v], [(x.hi.iloc[0] - x.acc.iloc[0]) if len(x) else 0 for x in v]]
-        ax.bar(np.arange(len(dsets)) + (i - 1.5) * w, y, w, yerr=e, capsize=2, label=LABEL[s], color=colors[i])
-    ax.set_xticks(range(len(dsets))); ax.set_xticklabels([DLAB[d] for d in dsets]); ax.set_ylabel("Accuracy (%)"); ax.set_ylim(0, 105)
-    ax.set_title(f"Accuracy by prompting strategy: {m}"); ax.legend(fontsize=7, ncol=4, loc="lower center"); fig.tight_layout()
+        ax.bar(np.arange(len(dsets_m)) + (i - 1.5) * w, y, w, yerr=e, capsize=2, label=LABEL[s], color=colors[i])
+    ax.set_xticks(range(len(dsets_m))); ax.set_xticklabels([DLAB[d] for d in dsets_m]); ax.set_ylabel("Accuracy (%)"); ax.set_ylim(0, 105)
+    ax.set_title(f"Accuracy by prompting strategy: {m}"); ax.legend(fontsize=8, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.1), frameon=False); fig.tight_layout()
     fig.savefig("results/acc_" + m.replace("/", "_") + ".png", dpi=200); plt.close(fig)
 fig, ax = plt.subplots(figsize=(6, 3.8))
 for m, mk in zip(models, ["o", "s", "^", "D"]):

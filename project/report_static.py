@@ -74,19 +74,19 @@ def literature(d):
       ["Kojima et al. [3]", "Zero-shot CoT", "A trigger phrase elicits reasoning", "Compared with few-shot CoT"],
       ["Sprague et al. [14]", "Meta-analysis of CoT", "Gains mostly on math/symbolic", "Per-task check on 3 task types"],
       ["Wang et al. [4]", "Self-consistency", "Voting over paths improves accuracy", "Left as future work"]],
-      "Table 1: Summary of closely related work", widths=[1.2, 1.4, 2.0, 1.9], size=9)
+      "Table 1: Summary of closely related work", widths=[1.2, 1.4, 2.0, 1.9], size=9, left=True)
     para(d, "Most of this literature evaluates a single model family and reports accuracy only. The present study keeps the task instructions, answer format and decoding settings fixed across four strategies, uses two different open-weight models, and reports accuracy together with confidence intervals, significance tests and output length.")
 
 def methodology(d, n, models, calls):
     heading(d, "5. Methodology")
     subheading(d, "5.1 Experimental design")
-    para(d, f"The study is a full factorial experiment: 4 prompting strategies × 3 datasets × 2 models × {n} questions per dataset, giving {calls:,} model calls. Every combination uses exactly the same questions, so strategies are compared on paired data. Figure 1 shows the pipeline.")
+    para(d, "The study was planned as a full factorial experiment: 4 prompting strategies × 3 datasets × 2 models × 60 questions per dataset (1,440 model calls). All strategies are applied to exactly the same questions, so they are compared on paired data. The free API tier limits the number of tokens per day, and the daily budget for Qwen3.8-27B ran out before the run finished. The final data therefore consist of ALLaM-2-7B on all three datasets (60 questions each, 720 calls) and Qwen3.8-27B on GSM8K (60 questions, 240 calls) and StrategyQA (51 questions, 204 calls); Date Understanding was not completed for Qwen. Within each model and dataset only questions answered under all four strategies are analysed (1,164 calls in total). Figure 1 shows the pipeline.")
     figure(d, "results/pipeline.png", "Figure 1: Experimental pipeline", 6.0)
     subheading(d, "5.2 Datasets")
     bullets(d, [
-      f"**GSM8K** [5]: grade-school arithmetic word problems with a numeric answer. {n} questions were drawn from the official test split.",
-      f"**StrategyQA** [6]: yes/no questions needing implicit multi-hop commonsense reasoning ({n} questions, BIG-bench release [7]).",
-      f"**Date Understanding** [7]: calendar reasoning posed as multiple choice with six options ({n} questions, BIG-bench; option order was shuffled)."])
+      "**GSM8K** [5]: grade-school arithmetic word problems with a numeric answer. 60 questions were drawn from the official test split.",
+      "**StrategyQA** [6]: yes/no questions needing implicit multi-hop commonsense reasoning (60 sampled questions, BIG-bench release [7]; 51 of them completed for Qwen).",
+      "**Date Understanding** [7]: calendar reasoning posed as multiple choice with six options (60 questions, BIG-bench; option order was shuffled; ALLaM only)."])
     para(d, "Questions were selected by sorting item indices with a salted SHA-256 hash, which is deterministic and reproducible. Items used as few-shot examples were removed from the test pool, so there is no overlap between demonstrations and test questions.")
     subheading(d, "5.3 Prompting strategies")
     bullets(d, [
