@@ -76,5 +76,9 @@ heading(d, "9. Conclusion")
 para(d, "This project compared zero-shot, zero-shot CoT, few-shot and few-shot CoT prompting on arithmetic, commonsense and temporal reasoning with two open-weight models. Chain-of-thought reasoning was the dominant factor for arithmetic: it raised GSM8K accuracy from 11.7% to as much as 56.7% for ALLaM-2-7B and from 53.3% to as much as 95.0% for Qwen3.8-27B, a significant gain in every case (p < 0.001), whereas few-shot examples alone gave no significant gain. On StrategyQA no strategy was significantly better than another. Few-shot CoT was the most reliable overall: it had the highest accuracy in three of the five model-dataset settings (GSM8K for both models and Date Understanding), was within sampling error of the best on StrategyQA, avoided answer-format failures, and needed fewer output tokens than zero-shot CoT. The practical recommendation is to use few-shot CoT for computation-heavy tasks and plain prompts for knowledge-based questions. The limitations above, chiefly the small samples and the incomplete Qwen runs, mean these findings should be confirmed on larger samples. All code, prompts and raw outputs are in the project repository so the experiments can be reproduced.")
 R.references(d)
 page_numbers(d)
+cp = d.core_properties
+cp.author = cp.last_modified_by = NAME
+cp.title = "A Comparative Evaluation of Zero Shot and Few Shot Prompting Strategies for Enhancing Complex Reasoning in Large Language Models"
+cp.subject = "Prompt Engineering (IS4143) Research Based Project"; cp.comments = ""
 d.save("report/Prompt_Engineering_IS4143_Research_Report.docx")
 print("saved")
